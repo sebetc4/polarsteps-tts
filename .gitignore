@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version-cache
+
+# uv
+.uv/
+uv.lock
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+coverage.xml
+
+# Type checkers / linters
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Project artifacts (only at repo root)
+/output/
+/audio/
+/cache/
+*.mp3
+*.wav
+/trip.json
+/posts.json
+
+# Secrets / env
+.env
+.env.local
+
+#Tmp
+CLAUDE.md
+docs/*
