@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from polarsteps_tts.domain.exceptions import InvalidTripUrl
+from polarsteps_tts.domain.exceptions import InvalidTripUrlError
 from polarsteps_tts.domain.value_objects import TripId
 from polarsteps_tts.infrastructure.polarsteps import parse_trip_url
 
@@ -23,9 +23,9 @@ class TestParseTripUrl:
         assert share_token == "abc-123"
 
     def test_rejects_unrelated_url(self) -> None:
-        with pytest.raises(InvalidTripUrl):
+        with pytest.raises(InvalidTripUrlError):
             parse_trip_url("https://example.com/foo/bar")
 
     def test_rejects_url_without_trip_id(self) -> None:
-        with pytest.raises(InvalidTripUrl):
+        with pytest.raises(InvalidTripUrlError):
             parse_trip_url("https://www.polarsteps.com/Alice/")

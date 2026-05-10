@@ -6,8 +6,8 @@ import respx
 
 from polarsteps_tts.domain.exceptions import (
     InfrastructureError,
-    TripNotAccessible,
-    TripNotFound,
+    TripNotAccessibleError,
+    TripNotFoundError,
 )
 from polarsteps_tts.domain.value_objects import TripId
 from polarsteps_tts.infrastructure.polarsteps import PolarstepsApiRepository
@@ -76,13 +76,13 @@ class TestPolarstepsApiRepository:
     @respx.mock
     def test_404_raises_trip_not_found(self) -> None:
         respx.get(f"{_BASE}/trips/42").mock(return_value=httpx.Response(404))
-        with PolarstepsApiRepository() as repo, pytest.raises(TripNotFound):
+        with PolarstepsApiRepository() as repo, pytest.raises(TripNotFoundError):
             repo.get_by_id(TripId("42"))
 
     @respx.mock
     def test_401_raises_trip_not_accessible(self) -> None:
         respx.get(f"{_BASE}/trips/42").mock(return_value=httpx.Response(401))
-        with PolarstepsApiRepository() as repo, pytest.raises(TripNotAccessible):
+        with PolarstepsApiRepository() as repo, pytest.raises(TripNotAccessibleError):
             repo.get_by_id(TripId("42"))
 
     @respx.mock

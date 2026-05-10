@@ -6,11 +6,16 @@ from polarsteps_tts.domain.entities import Location, Step, Trip
 from polarsteps_tts.domain.value_objects import TripId
 
 
-def _make_step(step_id: str = "1", description: str | None = "Hello world") -> Step:
+def _make_step(
+    step_id: str = "1",
+    description: str | None = "Hello world",
+    position: int | None = None,
+) -> Step:
     return Step(
         id=step_id,
         name="Some step",
         start_time=datetime(2024, 7, 15, tzinfo=UTC),
+        position=position if position is not None else int(step_id),
         description=description,
         location=Location(name="Paris", country_code="FR"),
     )
@@ -44,7 +49,7 @@ class TestTrip:
         )
         assert tuple(s.id for s in trip.steps_with_text) == ("1", "4")
 
-    def test_total_text_length_counts_all_descriptions(self) -> None:
+    def test_total_text_length_counts_only_narratable_steps(self) -> None:
         trip = Trip(
             id=TripId("42"),
             name="Test",
@@ -52,9 +57,10 @@ class TestTrip:
             end_date=datetime(2024, 7, 25, tzinfo=UTC),
             author_first_name=None,
             steps=(
-                _make_step("1", "abc"),  # 3
-                _make_step("2", None),  # 0
-                _make_step("3", "hello"),  # 5
+                _make_step("1", "abc"),  # 3 ✓
+                _make_step("2", None),  # 0 (filtered)
+                _make_step("3", "   "),  # 0 (filtered: whitespace only)
+                _make_step("4", "hello"),  # 5 ✓
             ),
         )
         assert trip.total_text_length == 8

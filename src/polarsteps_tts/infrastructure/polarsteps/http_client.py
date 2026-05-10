@@ -6,8 +6,8 @@ import httpx
 
 from polarsteps_tts.domain.exceptions import (
     InfrastructureError,
-    TripNotAccessible,
-    TripNotFound,
+    TripNotAccessibleError,
+    TripNotFoundError,
 )
 from polarsteps_tts.domain.value_objects import TripId
 
@@ -49,9 +49,9 @@ class PolarstepsHttpClient:
         except httpx.HTTPStatusError as e:
             status = e.response.status_code
             if status == 404:
-                raise TripNotFound(str(trip_id)) from e
+                raise TripNotFoundError(str(trip_id)) from e
             if status in (401, 403):
-                raise TripNotAccessible(str(trip_id)) from e
+                raise TripNotAccessibleError(str(trip_id)) from e
             raise InfrastructureError(f"Polarsteps API returned HTTP {status}") from e
         except httpx.HTTPError as e:
             raise InfrastructureError(f"Polarsteps API request failed: {e}") from e

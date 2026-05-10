@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from polarsteps_tts.domain.exceptions import InvalidTripId
+from polarsteps_tts.domain.exceptions import InvalidTripIdError
 from polarsteps_tts.domain.value_objects import TripId
 
 
@@ -12,11 +12,11 @@ class TestTripId:
         assert str(trip_id) == "23964761"
 
     def test_rejects_empty_string(self) -> None:
-        with pytest.raises(InvalidTripId):
+        with pytest.raises(InvalidTripIdError):
             TripId("")
 
     def test_rejects_non_numeric_string(self) -> None:
-        with pytest.raises(InvalidTripId):
+        with pytest.raises(InvalidTripIdError):
             TripId("abc")
 
     def test_is_immutable(self) -> None:

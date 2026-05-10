@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 
 from polarsteps_tts.application.use_cases import FetchTripCommand, FetchTripUseCase
 from polarsteps_tts.domain.entities import Trip
-from polarsteps_tts.domain.exceptions import TripNotFound
+from polarsteps_tts.domain.exceptions import TripNotFoundError
 from polarsteps_tts.domain.ports import TripRepository
 from polarsteps_tts.domain.value_objects import TripId
 
@@ -48,9 +48,9 @@ class TestFetchTripUseCase:
 
     def test_propagates_domain_errors(self, mocker: MockerFixture) -> None:
         repo = mocker.Mock(spec=TripRepository)
-        repo.get_by_id.side_effect = TripNotFound("42")
+        repo.get_by_id.side_effect = TripNotFoundError("42")
 
         use_case = FetchTripUseCase(cast(TripRepository, repo))
 
-        with pytest.raises(TripNotFound):
+        with pytest.raises(TripNotFoundError):
             use_case.execute(FetchTripCommand(TripId("42")))

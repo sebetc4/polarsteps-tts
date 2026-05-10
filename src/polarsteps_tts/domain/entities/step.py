@@ -11,6 +11,7 @@ class Step:
     id: str
     name: str
     start_time: datetime
+    position: int
     description: str | None = None
     location: Location | None = None
 

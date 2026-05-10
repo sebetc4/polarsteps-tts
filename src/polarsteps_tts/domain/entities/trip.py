@@ -22,4 +22,4 @@ class Trip:
 
     @property
     def total_text_length(self) -> int:
-        return sum(len(s.description or "") for s in self.steps)
+        return sum(len(s.description or "") for s in self.steps_with_text)

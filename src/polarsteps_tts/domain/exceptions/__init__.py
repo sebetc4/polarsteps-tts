@@ -5,25 +5,25 @@ class DomainError(Exception):
     """Base class for all domain-level errors. Carries no technical details."""
 
 
-class InvalidTripId(DomainError):
+class InvalidTripIdError(DomainError):
     def __init__(self, value: object) -> None:
         super().__init__(f"Invalid trip id: {value!r}")
         self.value = value
 
 
-class InvalidTripUrl(DomainError):
+class InvalidTripUrlError(DomainError):
     def __init__(self, url: str) -> None:
         super().__init__(f"Invalid Polarsteps trip URL: {url!r}")
         self.url = url
 
 
-class TripNotFound(DomainError):
+class TripNotFoundError(DomainError):
     def __init__(self, trip_id: str) -> None:
         super().__init__(f"Trip not found: {trip_id}")
         self.trip_id = trip_id
 
 
-class TripNotAccessible(DomainError):
+class TripNotAccessibleError(DomainError):
     """Raised when a trip exists but cannot be read (private, missing share token)."""
 
     def __init__(self, trip_id: str) -> None:
@@ -38,8 +38,8 @@ class InfrastructureError(DomainError):
 __all__ = [
     "DomainError",
     "InfrastructureError",
-    "InvalidTripId",
-    "InvalidTripUrl",
-    "TripNotAccessible",
-    "TripNotFound",
+    "InvalidTripIdError",
+    "InvalidTripUrlError",
+    "TripNotAccessibleError",
+    "TripNotFoundError",
 ]

@@ -113,12 +113,12 @@ class TestCachedTripRepository:
         http_client.fetch_payload.assert_called_once_with(_TRIP_ID, "abc-123")
 
     def test_fetcher_error_on_cache_miss_propagates(self, mocker: MockerFixture) -> None:
-        from polarsteps_tts.domain.exceptions import TripNotFound
+        from polarsteps_tts.domain.exceptions import TripNotFoundError
 
         repo, http_client, cache = _build(mocker, cached=None)
-        http_client.fetch_payload.side_effect = TripNotFound(str(_TRIP_ID))
+        http_client.fetch_payload.side_effect = TripNotFoundError(str(_TRIP_ID))
 
-        with pytest.raises(TripNotFound):
+        with pytest.raises(TripNotFoundError):
             repo.get_by_id(_TRIP_ID)
 
         cache.put.assert_not_called()

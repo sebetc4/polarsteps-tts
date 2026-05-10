@@ -51,7 +51,6 @@ select = [
 ]
 ignore = [
     "E501",           # line length handled by formatter
-    "N818",           # domain exceptions stay descriptive (TripNotFound, not TripNotFoundError)
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -63,9 +62,7 @@ strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 disallow_any_generics = true
-mypy_path = "src"
-explicit_package_bases = true
-packages = ["polarsteps_tts", "tests"]
+files = ["src", "tests"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
