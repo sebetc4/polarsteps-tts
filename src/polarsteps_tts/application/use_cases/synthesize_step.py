@@ -40,8 +40,8 @@ class SynthesizeStepUseCase:
 
     def execute(self, command: SynthesizeStepCommand) -> SynthesizedStep:
         segments = tuple(
-            self._tts.synthesize(chunk.text, command.voice, command.language, command.options)
-            for chunk in command.script.chunks
+            self._tts.synthesize(text, command.voice, command.language, command.options)
+            for text in command.script.all_segments()
         )
         total_duration = sum(s.duration_seconds for s in segments)
         return SynthesizedStep(

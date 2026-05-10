@@ -11,19 +11,21 @@ import soundfile as sf
 from polarsteps_tts.application.use_cases import (
     FetchTripCommand,
     FetchTripUseCase,
+    PrepareNarrationCommand,
+    PrepareNarrationUseCase,
     SynthesizeStepCommand,
     SynthesizeStepUseCase,
 )
 from polarsteps_tts.domain.entities import (
     AudioSegment,
-    NarrationScript,
     PresetVoice,
     Step,
     Trip,
     Voice,
 )
-from polarsteps_tts.domain.exceptions import DomainError, TtsTextRejectedError
+from polarsteps_tts.domain.exceptions import DomainError
 from polarsteps_tts.domain.ports import TextToSpeechEngine, TripRepository
+from polarsteps_tts.domain.services import IntroGenerator, TextChunker, TextCleaner
 from polarsteps_tts.domain.value_objects import Slug
 from polarsteps_tts.infrastructure.polarsteps import parse_trip_url
 
@@ -44,6 +46,7 @@ class SynthesizeStepArgs:
     out_dir: Path
     repository: TripRepository
     engine: TextToSpeechEngine
+    include_intro: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,10 +69,14 @@ def synthesize_step(args: SynthesizeStepArgs) -> SynthesizeStepResult:
     trip = FetchTripUseCase(args.repository).execute(FetchTripCommand(trip_id, share_token))
     step = _select_step(trip, args.step_index)
 
-    if step.description is None or not step.description.strip():
-        raise TtsTextRejectedError(f"Step {args.step_index} ('{step.name}') has no text")
-
-    script = NarrationScript.from_paragraphs(step.description)
+    prepare_uc = PrepareNarrationUseCase(
+        intro_generator=IntroGenerator(),
+        text_cleaner=TextCleaner(),
+        text_chunker=TextChunker(),
+    )
+    script = prepare_uc.execute(
+        PrepareNarrationCommand(step=step, include_intro=args.include_intro)
+    )
     synthesized = SynthesizeStepUseCase(args.engine).execute(
         SynthesizeStepCommand(script=script, voice=args.voice)
     )

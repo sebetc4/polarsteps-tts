@@ -47,8 +47,13 @@ class TtsTextRejectedError(DomainError):
     """Raised when input text cannot be synthesized (empty, too long, unknown voice)."""
 
 
+class EmptyStepTextError(DomainError):
+    """Raised when a step has no narratable text (before or after cleaning)."""
+
+
 __all__ = [
     "DomainError",
+    "EmptyStepTextError",
     "InfrastructureError",
     "InvalidTripIdError",
     "InvalidTripUrlError",

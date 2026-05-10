@@ -117,6 +117,9 @@ def synthesize_step_cmd(
     no_tts_cache: bool = typer.Option(
         False, "--no-tts-cache", help="Bypass the audio segment cache (always re-synthesize)."
     ),
+    no_intro: bool = typer.Option(
+        False, "--no-intro", help="Skip the spoken intro ('Étape N : ...') before the body."
+    ),
 ) -> None:
     """Synthesize a single step's text into a WAV audio file."""
     try:
@@ -146,6 +149,7 @@ def synthesize_step_cmd(
                 out_dir=out,
                 repository=repository,
                 engine=engine,
+                include_intro=not no_intro,
             )
         )
     except DomainError as e:

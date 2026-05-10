@@ -100,7 +100,7 @@ class TestSynthesizeStepCommand:
         assert "Refuge des Mottets" in result.output
 
     @respx.mock
-    def test_calls_tts_once_per_paragraph(self, runner: CliRunner, out_dir: Path) -> None:
+    def test_calls_tts_for_intro_and_each_paragraph(self, runner: CliRunner, out_dir: Path) -> None:
         _, _, speech_route = _mock_happy_path()
 
         result = runner.invoke(
@@ -109,7 +109,33 @@ class TestSynthesizeStepCommand:
         )
 
         assert result.exit_code == 0, result.output
-        assert speech_route.call_count == 2  # two paragraphs in the fixture
+        # 1 intro + 2 paragraphs in the fixture
+        assert speech_route.call_count == 3
+
+    @respx.mock
+    def test_no_intro_skips_intro_call(self, runner: CliRunner, out_dir: Path) -> None:
+        _, _, speech_route = _mock_happy_path()
+
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--no-intro"],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert speech_route.call_count == 2  # body only, no intro
+
+    @respx.mock
+    def test_intro_text_includes_step_metadata(self, runner: CliRunner, out_dir: Path) -> None:
+        _, _, speech_route = _mock_happy_path()
+
+        result = runner.invoke(app, ["synthesize-step", _URL, "0", "--out", str(out_dir)])
+
+        assert result.exit_code == 0, result.output
+        intro_call = speech_route.calls[0].request
+        body = intro_call.read().decode()
+        assert "Étape 1" in body
+        assert "Refuge des Mottets" in body
+        assert "Bourg-Saint-Maurice" in body
 
     @respx.mock
     def test_caches_audio_on_second_run(self, runner: CliRunner, out_dir: Path) -> None:
@@ -127,7 +153,7 @@ class TestSynthesizeStepCommand:
         assert first.exit_code == 0
         assert second.exit_code == 0
         # Second run: trip cached + audio cached → no Voxtral calls
-        assert speech_route.call_count == 2  # only first run
+        assert speech_route.call_count == 3  # intro + 2 paragraphs (only first run)
 
     @respx.mock
     def test_no_tts_cache_disables_audio_cache(self, runner: CliRunner, out_dir: Path) -> None:
@@ -136,7 +162,8 @@ class TestSynthesizeStepCommand:
         runner.invoke(app, ["synthesize-step", _URL, "0", "--out", str(out_dir)])
         runner.invoke(app, ["synthesize-step", _URL, "0", "--out", str(out_dir), "--no-tts-cache"])
 
-        assert speech_route.call_count == 4  # 2 paragraphs x 2 runs
+        # 3 calls (intro + 2 paragraphs) per run, 2 runs without cache
+        assert speech_route.call_count == 6
 
     @respx.mock
     def test_unavailable_engine_exits_1(self, runner: CliRunner, out_dir: Path) -> None:

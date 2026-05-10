@@ -27,7 +27,7 @@ class TestSynthesizeStepUseCase:
         engine = MagicMock()
         engine.synthesize.return_value = _make_segment(0.5)
 
-        script = NarrationScript(chunks=(TextChunk("Un."), TextChunk("Deux."), TextChunk("Trois.")))
+        script = NarrationScript(body=(TextChunk("Un."), TextChunk("Deux."), TextChunk("Trois.")))
         use_case = SynthesizeStepUseCase(engine)
 
         use_case.execute(SynthesizeStepCommand(script=script, voice=PresetVoice.FR_FEMALE))
@@ -42,7 +42,7 @@ class TestSynthesizeStepUseCase:
             _make_segment(0.25),
         ]
 
-        script = NarrationScript(chunks=(TextChunk("A"), TextChunk("B"), TextChunk("C")))
+        script = NarrationScript(body=(TextChunk("A"), TextChunk("B"), TextChunk("C")))
         result = SynthesizeStepUseCase(engine).execute(
             SynthesizeStepCommand(script=script, voice=PresetVoice.FR_FEMALE)
         )
@@ -54,7 +54,7 @@ class TestSynthesizeStepUseCase:
         engine = MagicMock()
         engine.synthesize.side_effect = [_make_segment(0.5), _make_segment(1.5)]
 
-        script = NarrationScript(chunks=(TextChunk("A"), TextChunk("B")))
+        script = NarrationScript(body=(TextChunk("A"), TextChunk("B")))
         result = SynthesizeStepUseCase(engine).execute(
             SynthesizeStepCommand(script=script, voice=PresetVoice.FR_FEMALE)
         )
@@ -66,7 +66,7 @@ class TestSynthesizeStepUseCase:
         engine = MagicMock()
         engine.synthesize.side_effect = TtsEngineError("server down")
 
-        script = NarrationScript(chunks=(TextChunk("A"),))
+        script = NarrationScript(body=(TextChunk("A"),))
         with pytest.raises(TtsEngineError):
             SynthesizeStepUseCase(engine).execute(
                 SynthesizeStepCommand(script=script, voice=PresetVoice.FR_FEMALE)
