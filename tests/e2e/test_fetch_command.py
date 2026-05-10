@@ -43,9 +43,7 @@ class TestFetchCommand:
     def test_fetch_prints_summary(self, runner: CliRunner) -> None:
         respx.get(f"{_BASE}/trips/23964761").mock(return_value=httpx.Response(200, json=_payload()))
 
-        # Typer collapses a single-command app: the "fetch" subcommand name
-        # is implicit until a second command is registered.
-        result = runner.invoke(app, [_URL])
+        result = runner.invoke(app, ["fetch", _URL])
 
         assert result.exit_code == 0, result.output
         assert "Tour du Mont-Blanc" in result.output
@@ -57,8 +55,8 @@ class TestFetchCommand:
             return_value=httpx.Response(200, json=_payload())
         )
 
-        first = runner.invoke(app, [_URL])
-        second = runner.invoke(app, [_URL])
+        first = runner.invoke(app, ["fetch", _URL])
+        second = runner.invoke(app, ["fetch", _URL])
 
         assert first.exit_code == 0
         assert second.exit_code == 0
@@ -70,8 +68,8 @@ class TestFetchCommand:
             return_value=httpx.Response(200, json=_payload())
         )
 
-        runner.invoke(app, [_URL])
-        runner.invoke(app, [_URL, "--no-cache"])
+        runner.invoke(app, ["fetch", _URL])
+        runner.invoke(app, ["fetch", _URL, "--no-cache"])
 
         assert route.call_count == 2
 
@@ -81,19 +79,19 @@ class TestFetchCommand:
             return_value=httpx.Response(200, json=_payload())
         )
 
-        runner.invoke(app, [_URL])  # populate cache
-        runner.invoke(app, [_URL, "--refresh"])
+        runner.invoke(app, ["fetch", _URL])  # populate cache
+        runner.invoke(app, ["fetch", _URL, "--refresh"])
 
         assert route.call_count == 2
 
     def test_invalid_url_exits_2(self, runner: CliRunner) -> None:
-        result = runner.invoke(app, ["https://example.com/foo"])
+        result = runner.invoke(app, ["fetch", "https://example.com/foo"])
         assert result.exit_code == 2
         assert "Invalid URL" in result.output
 
     @respx.mock
     def test_404_exits_1(self, runner: CliRunner) -> None:
         respx.get(f"{_BASE}/trips/23964761").mock(return_value=httpx.Response(404))
-        result = runner.invoke(app, [_URL])
+        result = runner.invoke(app, ["fetch", _URL])
         assert result.exit_code == 1
         assert "Error" in result.output

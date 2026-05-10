@@ -35,6 +35,18 @@ class InfrastructureError(DomainError):
     """Generic wrapper for any unrecoverable infrastructure-level failure."""
 
 
+class TtsEngineError(InfrastructureError):
+    """Generic TTS engine failure (network, model unavailable, OOM)."""
+
+
+class TtsEngineUnavailableError(TtsEngineError):
+    """Raised when the TTS engine cannot serve requests (health check failed)."""
+
+
+class TtsTextRejectedError(DomainError):
+    """Raised when input text cannot be synthesized (empty, too long, unknown voice)."""
+
+
 __all__ = [
     "DomainError",
     "InfrastructureError",
@@ -42,4 +54,7 @@ __all__ = [
     "InvalidTripUrlError",
     "TripNotAccessibleError",
     "TripNotFoundError",
+    "TtsEngineError",
+    "TtsEngineUnavailableError",
+    "TtsTextRejectedError",
 ]
