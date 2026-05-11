@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import timedelta
 from pathlib import Path
 
 import typer
@@ -51,25 +54,25 @@ def _default_audio_cache_root() -> Path:
     return Path(base) / "polarsteps-tts" / "audio"
 
 
-def _build_repository(no_cache: bool, refresh: bool) -> tuple[TripRepository, object]:
-    """Return (repo, resource_to_close). Honors --no-cache and --refresh."""
-    http_client = PolarstepsHttpClient()
-    if no_cache:
-        return PolarstepsApiRepository(http_client=http_client), http_client
+@contextmanager
+def _build_repository(no_cache: bool, refresh: bool) -> Iterator[TripRepository]:
+    """Yield a configured TripRepository and close the underlying HTTP client on exit."""
+    with PolarstepsHttpClient() as http_client:
+        if no_cache:
+            yield PolarstepsApiRepository(http_client=http_client)
+            return
 
-    cache = JsonFileCache(_default_trip_cache_root())
-    if refresh:
-        from datetime import timedelta
-
-        freshness = FreshnessPolicy(ongoing_ttl=timedelta(0), finished_ttl=timedelta(0))
-    else:
-        freshness = FreshnessPolicy()
-
-    return CachedTripRepository(
-        http_client=http_client,
-        cache=cache,
-        freshness=freshness,
-    ), http_client
+        cache = JsonFileCache(_default_trip_cache_root())
+        freshness = (
+            FreshnessPolicy(ongoing_ttl=timedelta(0), finished_ttl=timedelta(0))
+            if refresh
+            else FreshnessPolicy()
+        )
+        yield CachedTripRepository(
+            http_client=http_client,
+            cache=cache,
+            freshness=freshness,
+        )
 
 
 @app.command()
@@ -87,16 +90,12 @@ def fetch(
         _console.print(f"[red]Invalid URL:[/red] {e}")
         raise typer.Exit(code=2) from e
 
-    repository, owned = _build_repository(no_cache=no_cache, refresh=refresh)
     try:
-        use_case = FetchTripUseCase(repository)
-        trip = use_case.execute(FetchTripCommand(trip_id, share_token))
+        with _build_repository(no_cache=no_cache, refresh=refresh) as repository:
+            trip = FetchTripUseCase(repository).execute(FetchTripCommand(trip_id, share_token))
     except DomainError as e:
         _console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=1) from e
-    finally:
-        if hasattr(owned, "close"):
-            owned.close()
 
     _print_summary(trip)
 
@@ -128,37 +127,34 @@ def synthesize_step_cmd(
         _console.print(f"[red]Invalid voice:[/red] {e}")
         raise typer.Exit(code=2) from e
 
-    repository, owned_http = _build_repository(no_cache=no_cache, refresh=refresh)
-    voxtral_http = VoxtralHttpClient(base_url=voxtral_url)
-    engine: TextToSpeechEngine = VoxtralTtsEngine(http_client=voxtral_http)
-
-    if not no_tts_cache:
-        audio_cache = WavFileAudioSegmentCache(_default_audio_cache_root())
-        engine = CachingTextToSpeechEngine(
-            inner=engine,
-            cache=audio_cache,
-            model_version=DEFAULT_MODEL_VERSION,
-        )
-
     try:
-        result = synthesize_step(
-            SynthesizeStepArgs(
-                url=url,
-                step_index=step_index,
-                voice=parsed_voice,
-                out_dir=out,
-                repository=repository,
-                engine=engine,
-                include_intro=not no_intro,
+        with (
+            _build_repository(no_cache=no_cache, refresh=refresh) as repository,
+            VoxtralHttpClient(base_url=voxtral_url) as voxtral_http,
+        ):
+            engine: TextToSpeechEngine = VoxtralTtsEngine(http_client=voxtral_http)
+            if not no_tts_cache:
+                audio_cache = WavFileAudioSegmentCache(_default_audio_cache_root())
+                engine = CachingTextToSpeechEngine(
+                    inner=engine,
+                    cache=audio_cache,
+                    model_version=DEFAULT_MODEL_VERSION,
+                )
+
+            result = synthesize_step(
+                SynthesizeStepArgs(
+                    url=url,
+                    step_index=step_index,
+                    voice=parsed_voice,
+                    out_dir=out,
+                    repository=repository,
+                    engine=engine,
+                    include_intro=not no_intro,
+                )
             )
-        )
     except DomainError as e:
         _console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=1) from e
-    finally:
-        if hasattr(owned_http, "close"):
-            owned_http.close()
-        voxtral_http.close()
 
     _console.print(
         f"[green]✓[/green] {result.step_name}\n"

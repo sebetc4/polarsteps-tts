@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from polarsteps_tts.domain.ports import CachedPayload, TripPayloadCache
 from polarsteps_tts.domain.value_objects import TripId
+from polarsteps_tts.infrastructure.storage import atomic_write_text
 
 _logger = logging.getLogger(__name__)
 
@@ -53,26 +52,13 @@ class JsonFileCache(TripPayloadCache):
             "fetched_at": datetime.now(UTC).isoformat(),
             "payload": payload,
         }
-        self._atomic_write(path, json.dumps(record, ensure_ascii=False))
+        atomic_write_text(path, json.dumps(record, ensure_ascii=False))
 
     def invalidate(self, trip_id: TripId) -> None:
         self._unlink_silently(self._path_for(trip_id))
 
     def _path_for(self, trip_id: TripId) -> Path:
         return self._root / f"{trip_id}.json"
-
-    @staticmethod
-    def _atomic_write(path: Path, content: str) -> None:
-        fd, tmp_path = tempfile.mkstemp(
-            prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent)
-        )
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(content)
-            os.replace(tmp_path, path)
-        except Exception:
-            Path(tmp_path).unlink(missing_ok=True)
-            raise
 
     @staticmethod
     def _unlink_silently(path: Path) -> None:

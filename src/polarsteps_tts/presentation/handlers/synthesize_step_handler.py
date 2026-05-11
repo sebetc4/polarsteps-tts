@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +27,7 @@ from polarsteps_tts.domain.ports import TextToSpeechEngine, TripRepository
 from polarsteps_tts.domain.services import IntroGenerator, TextChunker, TextCleaner
 from polarsteps_tts.domain.value_objects import Slug
 from polarsteps_tts.infrastructure.polarsteps import parse_trip_url
+from polarsteps_tts.infrastructure.storage import atomic_write_bytes
 
 # n_decoding_steps=64 confirmed in 4.A smoke test; bumping this value at runtime
 # (params.json edit) implies bumping this constant to invalidate the cache.
@@ -142,20 +142,7 @@ def _write_wav_with_silences(
 
     buffer = io.BytesIO()
     sf.write(buffer, combined, sample_rate, format="WAV", subtype="PCM_16")
-    _atomic_write_bytes(path, buffer.getvalue())
-
-
-def _atomic_write_bytes(path: Path, content: bytes) -> None:
-    import tempfile
-
-    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        Path(tmp).unlink(missing_ok=True)
-        raise
+    atomic_write_bytes(path, buffer.getvalue())
 
 
 def parse_voice(value: str) -> Voice:

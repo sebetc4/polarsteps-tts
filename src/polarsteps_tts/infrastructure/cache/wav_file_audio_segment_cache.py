@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 import re
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +10,7 @@ import soundfile as sf
 
 from polarsteps_tts.domain.entities import AudioSegment
 from polarsteps_tts.domain.ports import AudioCacheKey, AudioSegmentCache
+from polarsteps_tts.infrastructure.storage import atomic_write_bytes
 
 _logger = logging.getLogger(__name__)
 _PATH_SAFE_RE = re.compile(r"[^A-Za-z0-9_.-]")
@@ -58,26 +57,13 @@ class WavFileAudioSegmentCache(AudioSegmentCache):
 
         buffer = io.BytesIO()
         sf.write(buffer, arr, segment.sample_rate, format="WAV", subtype="PCM_16")
-        self._atomic_write(path, buffer.getvalue())
+        atomic_write_bytes(path, buffer.getvalue())
 
     def _path_for(self, key: AudioCacheKey) -> Path:
         voice_dir = _path_safe(key.voice_id)
         model_dir = _path_safe(key.model_version)
         filename = f"{key.text_hash}-{key.options_hash}-{key.language}.wav"
         return self._root / voice_dir / model_dir / filename
-
-    @staticmethod
-    def _atomic_write(path: Path, content: bytes) -> None:
-        fd, tmp_path = tempfile.mkstemp(
-            prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent)
-        )
-        try:
-            with os.fdopen(fd, "wb") as f:
-                f.write(content)
-            os.replace(tmp_path, path)
-        except Exception:
-            Path(tmp_path).unlink(missing_ok=True)
-            raise
 
     @staticmethod
     def _unlink_silently(path: Path) -> None:
