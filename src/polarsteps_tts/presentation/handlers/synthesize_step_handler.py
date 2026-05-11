@@ -122,6 +122,11 @@ def _write_wav_with_silences(
 
     sample_rate = segments[0].sample_rate
     channels = segments[0].channels
+    if any(s.sample_rate != sample_rate or s.channels != channels for s in segments[1:]):
+        raise ValueError(
+            "Cannot concatenate segments with mismatched audio formats: "
+            f"expected {sample_rate} Hz / {channels} ch"
+        )
     silence_samples = int(sample_rate * silence_seconds)
     silence = np.zeros(silence_samples * channels, dtype="<i2")
 

@@ -10,7 +10,7 @@ from polarsteps_tts.application.use_cases import FetchTripCommand, FetchTripUseC
 from polarsteps_tts.domain.entities import Trip
 from polarsteps_tts.domain.exceptions import DomainError
 from polarsteps_tts.domain.ports import TextToSpeechEngine, TripRepository
-from polarsteps_tts.domain.services import FreshnessPolicy
+from polarsteps_tts.domain.services import AudioEstimator, FreshnessPolicy
 from polarsteps_tts.infrastructure.cache import JsonFileCache, WavFileAudioSegmentCache
 from polarsteps_tts.infrastructure.polarsteps import (
     CachedTripRepository,
@@ -170,7 +170,7 @@ def synthesize_step_cmd(
 
 def _print_summary(trip: Trip) -> None:
     with_text = trip.steps_with_text
-    estimated_minutes = trip.total_text_length / 14 / 60  # ~14 chars/sec FR
+    estimated = AudioEstimator().estimate(trip)
     _console.print(f"[bold]{trip.name}[/bold]")
     if trip.author_first_name:
         _console.print(f"  Author: {trip.author_first_name}")
@@ -178,5 +178,5 @@ def _print_summary(trip: Trip) -> None:
         f"  Dates: {trip.start_date.date()} → {trip.end_date.date()}\n"
         f"  Steps: {len(trip.steps)} ({len(with_text)} with text)\n"
         f"  Total chars: {trip.total_text_length:,}\n"
-        f"  Estimated audio: ~{estimated_minutes:.0f} min"
+        f"  Estimated audio: ~{estimated.minutes:.0f} min"
     )

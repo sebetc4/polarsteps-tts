@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
@@ -9,6 +10,8 @@ from polarsteps_tts.domain.exceptions import (
     TtsEngineError,
     TtsTextRejectedError,
 )
+
+_logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "http://localhost:8091"
 DEFAULT_MODEL = "mistralai/Voxtral-4B-TTS-2603"
@@ -109,6 +112,12 @@ class VoxtralHttpClient:
                 response = self._client.post(url, json=payload, timeout=timeout)
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
                 last_transport_error = e
+                _logger.warning(
+                    "Voxtral transport error (attempt %d/%d): %s",
+                    attempt + 1,
+                    _MAX_RETRIES,
+                    e,
+                )
                 self._sleep_for_retry(attempt)
                 continue
 
@@ -125,6 +134,12 @@ class VoxtralHttpClient:
 
             # 5xx: server-side issue, retry
             if attempt < _MAX_RETRIES - 1:
+                _logger.warning(
+                    "Voxtral 5xx (attempt %d/%d): HTTP %d",
+                    attempt + 1,
+                    _MAX_RETRIES,
+                    response.status_code,
+                )
                 self._sleep_for_retry(attempt)
                 continue
             raise TtsEngineError(
