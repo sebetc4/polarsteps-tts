@@ -132,6 +132,15 @@ def synthesize_step_cmd(
         max=MAX_SPEED,
         help=f"Playback speed (Voxtral). Range {MIN_SPEED}-{MAX_SPEED}, 1.0 = normal.",
     ),
+    instructions: str | None = typer.Option(
+        None,
+        "--instructions",
+        help=(
+            "Free-form style prompt forwarded to Voxtral as the `instructions` field "
+            "(e.g. 'Lis avec une voix calme.'). No-op on Voxtral 4B-TTS-2603 today, "
+            "wired through for future model versions."
+        ),
+    ),
     voxtral_url: str = typer.Option(
         DEFAULT_BASE_URL, "--voxtral-url", help="Base URL of the local Voxtral server."
     ),
@@ -181,6 +190,7 @@ def synthesize_step_cmd(
                     include_intro=not no_intro,
                     output_format=output_format,  # type: ignore[arg-type]
                     speed=speed,
+                    instructions=instructions,
                 )
             )
     except DomainError as e:
@@ -209,6 +219,15 @@ def synthesize_trip_cmd(
         min=MIN_SPEED,
         max=MAX_SPEED,
         help=f"Playback speed (Voxtral). Range {MIN_SPEED}-{MAX_SPEED}, 1.0 = normal.",
+    ),
+    instructions: str | None = typer.Option(
+        None,
+        "--instructions",
+        help=(
+            "Free-form style prompt forwarded to Voxtral as the `instructions` field "
+            "(e.g. 'Lis avec une voix calme.'). No-op on Voxtral 4B-TTS-2603 today, "
+            "wired through for future model versions."
+        ),
     ),
     voxtral_url: str = typer.Option(
         DEFAULT_BASE_URL, "--voxtral-url", help="Base URL of the local Voxtral server."
@@ -282,6 +301,7 @@ def synthesize_trip_cmd(
                 include_intro=not no_intro,
                 output_format=output_format,  # type: ignore[arg-type]
                 speed=speed,
+                instructions=instructions,
                 on_step_done=on_step_done,
             )
             # Probe the engine once before adding the progress task so a Voxtral

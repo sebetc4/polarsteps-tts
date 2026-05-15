@@ -143,6 +143,43 @@ class TestSynthesizeStepCommand:
         payload = _json.loads(speech_route.calls[0].request.read())
         assert payload["speed"] == 1.25
 
+    @respx.mock
+    def test_instructions_flag_is_passed_to_voxtral(self, runner: CliRunner, out_dir: Path) -> None:
+        import json as _json
+
+        _, _, speech_route = _mock_happy_path()
+
+        result = runner.invoke(
+            app,
+            [
+                "synthesize-step",
+                _URL,
+                "0",
+                "--out",
+                str(out_dir),
+                "--instructions",
+                "Lis avec une voix calme.",
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        payload = _json.loads(speech_route.calls[0].request.read())
+        assert payload["instructions"] == "Lis avec une voix calme."
+
+    @respx.mock
+    def test_default_run_omits_instructions_field(self, runner: CliRunner, out_dir: Path) -> None:
+        import json as _json
+
+        _, _, speech_route = _mock_happy_path()
+
+        result = runner.invoke(app, ["synthesize-step", _URL, "0", "--out", str(out_dir)])
+
+        assert result.exit_code == 0, result.output
+        payload = _json.loads(speech_route.calls[0].request.read())
+        # When no --instructions is given, the field is omitted from the
+        # Voxtral payload (kept conditional in the http client).
+        assert "instructions" not in payload
+
     def test_speed_below_min_exits_2(self, runner: CliRunner, out_dir: Path) -> None:
         result = runner.invoke(
             app,

@@ -119,6 +119,7 @@ polarsteps-tts synthesize-step <URL> 0 --voice fr_male
 polarsteps-tts synthesize-step <URL> 0 --no-intro
 polarsteps-tts synthesize-step <URL> 0 --format wav
 polarsteps-tts synthesize-step <URL> 0 --speed 1.25
+polarsteps-tts synthesize-step <URL> 0 --instructions "Lis avec une voix calme."
 polarsteps-tts synthesize-step <URL> 0 --out ./my-output
 ```
 
@@ -143,6 +144,7 @@ polarsteps-tts synthesize-trip <URL> --no-tts-cache    # force re-synthesis
 | `--out <path>` | `./out` | Output directory. Files are written under `<out>/<trip-slug>/`. |
 | `--format mp3\|wav` | `mp3` | Output audio format. MP3 includes ID3 tags. |
 | `--speed <float>` | `1.0` | Playback speed (Voxtral). Range `0.25`–`4.0`. Below 1.0 = slower, above 1.0 = faster. Changes invalidate the audio cache. |
+| `--instructions <text>` | _(none)_ | Free-form style prompt forwarded to Voxtral as the `instructions` field (e.g. `"Lis avec une voix calme."`). No-op on the current Voxtral 4B-TTS-2603 weights but wired through for future model versions. Changes invalidate the audio cache. |
 | `--voxtral-url <url>` | `http://localhost:8091` | Override if the Voxtral server runs elsewhere. |
 | `--no-cache` | off | Skip the trip payload cache. |
 | `--refresh` | off | Re-fetch the trip and overwrite the cached payload. |

@@ -27,6 +27,7 @@ class SynthesizeTripArgs:
     include_intro: bool = True
     output_format: TrackFormat = "mp3"
     speed: float = DEFAULT_SPEED
+    instructions: str | None = None
     # Optional callback invoked once per step (after success or failure) so the
     # CLI can drive a progress bar without coupling the handler to `rich`.
     on_step_done: Callable[[Step, SynthesizeStepResult | None, Exception | None], None] | None = (
@@ -82,6 +83,7 @@ def synthesize_trip(args: SynthesizeTripArgs) -> SynthesizeTripResult:
                 include_intro=args.include_intro,
                 output_format=args.output_format,
                 speed=args.speed,
+                instructions=args.instructions,
             )
         except (DomainError, OSError) as e:
             failures.append(SynthesizeTripFailure(step=step, error=e))

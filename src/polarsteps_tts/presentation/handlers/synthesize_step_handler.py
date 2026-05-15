@@ -73,6 +73,7 @@ class SynthesizeStepArgs:
     include_intro: bool = True
     output_format: TrackFormat = "mp3"
     speed: float = DEFAULT_SPEED
+    instructions: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,6 +116,7 @@ def synthesize_step(args: SynthesizeStepArgs) -> SynthesizeStepResult:
         include_intro=args.include_intro,
         output_format=args.output_format,
         speed=args.speed,
+        instructions=args.instructions,
     )
 
 
@@ -129,6 +131,7 @@ def synthesize_resolved_step(
     include_intro: bool = True,
     output_format: TrackFormat = "mp3",
     speed: float = DEFAULT_SPEED,
+    instructions: str | None = None,
 ) -> SynthesizeStepResult:
     """Synthesize a step that has already been resolved from its trip.
 
@@ -142,7 +145,10 @@ def synthesize_resolved_step(
         text_chunker=TextChunker(),
     )
     script = prepare_uc.execute(PrepareNarrationCommand(step=step, include_intro=include_intro))
-    options = DEFAULT_SYNTHESIS_OPTIONS if speed == DEFAULT_SPEED else SynthesisOptions(speed=speed)
+    if speed == DEFAULT_SPEED and instructions is None:
+        options = DEFAULT_SYNTHESIS_OPTIONS
+    else:
+        options = SynthesisOptions(speed=speed, instructions=instructions)
     synthesized = SynthesizeStepUseCase(engine).execute(
         SynthesizeStepCommand(script=script, voice=voice, options=options)
     )
