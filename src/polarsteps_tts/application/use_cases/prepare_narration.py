@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from polarsteps_tts.domain.entities import NarrationScript, Step, TextChunk
 from polarsteps_tts.domain.exceptions import EmptyStepTextError
@@ -39,7 +39,8 @@ class PrepareNarrationUseCase:
                 "has no narratable content after cleaning"
             )
 
-        intro = self.intro_generator.generate(command.step) if command.include_intro else None
+        intro_step = replace(command.step, name=self.text_cleaner.clean(command.step.name))
+        intro = self.intro_generator.generate(intro_step) if command.include_intro else None
         return NarrationScript(
             body=tuple(TextChunk(text=c) for c in chunks),
             intro=intro,

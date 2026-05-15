@@ -19,8 +19,9 @@ class FreshnessPolicy:
     def is_fresh(
         self,
         fetched_at: datetime,
-        trip_end_date: datetime,
+        trip_end_date: datetime | None,
         now: datetime,
     ) -> bool:
-        ttl = self.finished_ttl if trip_end_date < now else self.ongoing_ttl
+        is_ongoing = trip_end_date is None or trip_end_date >= now
+        ttl = self.ongoing_ttl if is_ongoing else self.finished_ttl
         return (now - fetched_at) < ttl

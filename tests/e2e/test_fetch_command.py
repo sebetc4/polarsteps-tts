@@ -95,3 +95,13 @@ class TestFetchCommand:
         result = runner.invoke(app, ["fetch", _URL])
         assert result.exit_code == 1
         assert "Error" in result.output
+
+    @respx.mock
+    def test_ongoing_trip_with_null_end_date_succeeds(self, runner: CliRunner) -> None:
+        ongoing = _payload() | {"end_date": None}
+        respx.get(f"{_BASE}/trips/23964761").mock(return_value=httpx.Response(200, json=ongoing))
+
+        result = runner.invoke(app, ["fetch", _URL])
+
+        assert result.exit_code == 0, result.output
+        assert "en cours" in result.output

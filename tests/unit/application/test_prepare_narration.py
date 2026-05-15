@@ -98,3 +98,14 @@ class TestPrepareNarrationUseCase:
         script = _use_case().execute(PrepareNarrationCommand(step=step))
         assert script.intro is not None
         assert script.intro.text == ("Étape 12 : Lac glaciaire. Le 2 août 2024, à Tokyo.")
+
+    def test_intro_cleans_dash_separator_and_caps_in_step_name(self) -> None:
+        # Step names like "BARILOCHE - ZAPALA" must be normalised before reaching
+        # the intro so Voxtral does not phonetise the dash as the letter "n"
+        # and does not mispronounce uppercase tokens.
+        step = _make_step(position=17, name="BARILOCHE - ZAPALA")
+        script = _use_case().execute(PrepareNarrationCommand(step=step))
+        assert script.intro is not None
+        assert "Bariloche, Zapala" in script.intro.text
+        assert " - " not in script.intro.text
+        assert "BARILOCHE" not in script.intro.text

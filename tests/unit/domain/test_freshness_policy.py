@@ -63,3 +63,28 @@ class TestFreshnessPolicy:
             trip_end_date=_NOW + timedelta(days=1),
             now=_NOW,
         )
+
+    def test_none_end_date_is_treated_as_ongoing(self) -> None:
+        policy = FreshnessPolicy()
+        # Within ongoing_ttl: fresh
+        assert policy.is_fresh(
+            fetched_at=_NOW - timedelta(hours=5),
+            trip_end_date=None,
+            now=_NOW,
+        )
+        # Past ongoing_ttl: stale
+        assert not policy.is_fresh(
+            fetched_at=_NOW - timedelta(hours=7),
+            trip_end_date=None,
+            now=_NOW,
+        )
+
+    def test_none_end_date_does_not_use_finished_ttl(self) -> None:
+        # An ongoing trip 25 days old must NOT be considered fresh under the
+        # 30-day finished_ttl — it should fall under the 6-hour ongoing_ttl.
+        policy = FreshnessPolicy()
+        assert not policy.is_fresh(
+            fetched_at=_NOW - timedelta(days=25),
+            trip_end_date=None,
+            now=_NOW,
+        )

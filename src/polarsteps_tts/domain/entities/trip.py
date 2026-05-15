@@ -12,9 +12,13 @@ class Trip:
     id: TripId
     name: str
     start_date: datetime
-    end_date: datetime
+    end_date: datetime | None
     author_first_name: str | None
     steps: tuple[Step, ...]
+
+    @property
+    def is_ongoing(self) -> bool:
+        return self.end_date is None
 
     @property
     def steps_with_text(self) -> tuple[Step, ...]:

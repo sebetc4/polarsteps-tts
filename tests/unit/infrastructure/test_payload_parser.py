@@ -112,11 +112,9 @@ class TestErrors:
         with pytest.raises(InfrastructureError):
             parse_trip_payload(payload)
 
-    def test_missing_end_date_raises_infrastructure_error(self) -> None:
-        payload = _payload()
-        del payload["end_date"]
+    def test_invalid_end_date_type_raises_infrastructure_error(self) -> None:
         with pytest.raises(InfrastructureError):
-            parse_trip_payload(payload)
+            parse_trip_payload(_payload(end_date="not-a-number"))
 
     def test_invalid_timestamp_type_raises_infrastructure_error(self) -> None:
         with pytest.raises(InfrastructureError):
@@ -195,6 +193,21 @@ class TestRobustness:
         )
         trip = parse_trip_payload(payload)
         assert tuple(s.id for s in trip.steps) == ("1", "3")
+
+    def test_accepts_iso_8601_string_dates(self) -> None:
+        # Polarsteps may serve ISO strings depending on the API version negotiated.
+        trip = parse_trip_payload(
+            _payload(
+                start_date="2024-07-14T23:33:20+00:00",
+                end_date="2024-07-24T05:46:40+00:00",
+            )
+        )
+        assert trip.start_date == datetime(2024, 7, 14, 23, 33, 20, tzinfo=UTC)
+        assert trip.end_date == datetime(2024, 7, 24, 5, 46, 40, tzinfo=UTC)
+
+    def test_iso_string_without_tz_is_assumed_utc(self) -> None:
+        trip = parse_trip_payload(_payload(start_date="2024-07-14T23:33:20"))
+        assert trip.start_date == datetime(2024, 7, 14, 23, 33, 20, tzinfo=UTC)
 
     def test_handles_millisecond_timestamps(self) -> None:
         payload = _payload(
@@ -350,8 +363,32 @@ class TestParseEndDate:
         end = parse_end_date(_payload())
         assert end == datetime(2024, 7, 24, 5, 46, 40, tzinfo=UTC)
 
-    def test_missing_raises_infrastructure_error(self) -> None:
+    def test_missing_returns_none_for_ongoing_trip(self) -> None:
         payload = _payload()
         del payload["end_date"]
+        assert parse_end_date(payload) is None
+
+    def test_null_returns_none_for_ongoing_trip(self) -> None:
+        assert parse_end_date(_payload(end_date=None)) is None
+
+    def test_invalid_type_raises_infrastructure_error(self) -> None:
         with pytest.raises(InfrastructureError):
-            parse_end_date(payload)
+            parse_end_date(_payload(end_date="not-a-number"))
+
+
+class TestOngoingTrip:
+    def test_null_end_date_yields_ongoing_trip(self) -> None:
+        trip = parse_trip_payload(_payload(end_date=None))
+        assert trip.end_date is None
+        assert trip.is_ongoing is True
+
+    def test_missing_end_date_yields_ongoing_trip(self) -> None:
+        payload = _payload()
+        del payload["end_date"]
+        trip = parse_trip_payload(payload)
+        assert trip.end_date is None
+        assert trip.is_ongoing is True
+
+    def test_finished_trip_has_is_ongoing_false(self) -> None:
+        trip = parse_trip_payload(_payload())
+        assert trip.is_ongoing is False

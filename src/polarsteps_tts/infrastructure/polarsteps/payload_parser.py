@@ -27,7 +27,7 @@ def parse_trip_payload(payload: dict[str, Any]) -> Trip:
             id=trip_id,
             name=payload.get("name") or f"Voyage {trip_id.value}",
             start_date=_to_datetime(payload["start_date"]),
-            end_date=_to_datetime(payload["end_date"]),
+            end_date=_optional_datetime(payload.get("end_date")),
             author_first_name=(payload.get("user") or {}).get("first_name"),
             steps=steps,
         )
@@ -35,12 +35,15 @@ def parse_trip_payload(payload: dict[str, Any]) -> Trip:
         raise InfrastructureError(f"Unexpected Polarsteps payload shape: {e}") from e
 
 
-def parse_end_date(payload: dict[str, Any]) -> datetime:
-    """Extract the trip end_date from a raw payload, in UTC."""
+def parse_end_date(payload: dict[str, Any]) -> datetime | None:
+    """Extract the trip end_date from a raw payload, in UTC.
+
+    Returns `None` for ongoing trips (end_date absent or null in the payload).
+    """
     try:
-        return _to_datetime(payload["end_date"])
-    except (KeyError, TypeError, ValueError) as e:
-        raise InfrastructureError(f"Missing or invalid end_date in payload: {e}") from e
+        return _optional_datetime(payload.get("end_date"))
+    except (TypeError, ValueError) as e:
+        raise InfrastructureError(f"Invalid end_date in payload: {e}") from e
 
 
 def _safe_step_from_payload(payload: dict[str, Any]) -> Step | None:
@@ -79,8 +82,23 @@ def _sort_and_index_steps(steps: tuple[Step, ...]) -> tuple[Step, ...]:
     return tuple(replace(s, position=i + 1) for i, s in enumerate(sorted_steps))
 
 
-def _to_datetime(timestamp: float | int) -> datetime:
-    ts = float(timestamp)
+def _to_datetime(value: float | int | str) -> datetime:
+    """Coerce a Polarsteps date field into a UTC datetime.
+
+    Accepts both numeric epochs (s or ms) and ISO 8601 strings; Polarsteps
+    has historically flipped between formats depending on the
+    `polarsteps-api-version` header negotiated.
+    """
+    if isinstance(value, str):
+        # `fromisoformat` requires Z suffix to be replaced in 3.10; tolerated in 3.11+.
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+    ts = float(value)
     if ts > _MILLISECOND_THRESHOLD:
         ts /= 1000
     return datetime.fromtimestamp(ts, tz=UTC)
+
+
+def _optional_datetime(value: float | int | str | None) -> datetime | None:
+    return None if value is None else _to_datetime(value)

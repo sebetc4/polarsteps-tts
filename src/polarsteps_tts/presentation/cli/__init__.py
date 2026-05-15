@@ -167,11 +167,12 @@ def synthesize_step_cmd(
 def _print_summary(trip: Trip) -> None:
     with_text = trip.steps_with_text
     estimated = AudioEstimator().estimate(trip)
+    end_label = trip.end_date.date().isoformat() if trip.end_date else "en cours"
     _console.print(f"[bold]{trip.name}[/bold]")
     if trip.author_first_name:
         _console.print(f"  Author: {trip.author_first_name}")
     _console.print(
-        f"  Dates: {trip.start_date.date()} → {trip.end_date.date()}\n"
+        f"  Dates: {trip.start_date.date()} → {end_label}\n"
         f"  Steps: {len(trip.steps)} ({len(with_text)} with text)\n"
         f"  Total chars: {trip.total_text_length:,}\n"
         f"  Estimated audio: ~{estimated.minutes:.0f} min"

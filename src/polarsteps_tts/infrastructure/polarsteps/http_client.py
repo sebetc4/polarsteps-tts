@@ -18,7 +18,8 @@ DEFAULT_HEADERS = {
     "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
     "Origin": "https://www.polarsteps.com",
     "Referer": "https://www.polarsteps.com/",
-    "polarsteps-api-version": "62",
+    # Pas de "polarsteps-api-version" : v62 renvoie all_steps vide + dates ISO.
+    # Sans header, l'API retourne le format historique (timestamps float + steps).
 }
 
 
