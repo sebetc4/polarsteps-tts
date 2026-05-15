@@ -90,7 +90,7 @@ class TestSynthesizeStepCommand:
 
         result = runner.invoke(
             app,
-            ["synthesize-step", _URL, "0", "--out", str(out_dir)],
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--format", "wav"],
         )
 
         assert result.exit_code == 0, result.output
@@ -98,6 +98,35 @@ class TestSynthesizeStepCommand:
         assert len(wav_files) == 1
         assert wav_files[0].stat().st_size > 0
         assert "Refuge des Mottets" in result.output
+
+    @respx.mock
+    def test_writes_mp3_by_default_with_id3_tags(self, runner: CliRunner, out_dir: Path) -> None:
+        from mutagen.id3 import ID3
+
+        _mock_happy_path()
+
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir)],
+        )
+
+        assert result.exit_code == 0, result.output
+        mp3_files = list(out_dir.rglob("*.mp3"))
+        assert len(mp3_files) == 1
+        assert not list(out_dir.rglob("*.wav"))  # default format swapped to mp3
+        tags = ID3(str(mp3_files[0]))
+        assert tags["TIT2"].text[0] == "Refuge des Mottets"
+        assert tags["TALB"].text[0] == "Tour du Mont-Blanc"
+        assert tags["TPE1"].text[0] == "Alice"
+        assert tags["TRCK"].text[0] == "1"
+
+    def test_invalid_format_exits_2(self, runner: CliRunner, out_dir: Path) -> None:
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--format", "ogg"],
+        )
+        assert result.exit_code == 2
+        assert "Invalid format" in result.output
 
     @respx.mock
     def test_calls_tts_for_intro_and_each_paragraph(self, runner: CliRunner, out_dir: Path) -> None:
