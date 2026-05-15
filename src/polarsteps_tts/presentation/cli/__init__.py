@@ -44,6 +44,11 @@ from polarsteps_tts.presentation.handlers import (
     synthesize_step,
     synthesize_trip,
 )
+from polarsteps_tts.presentation.handlers.synthesize_step_handler import (
+    DEFAULT_SPEED,
+    MAX_SPEED,
+    MIN_SPEED,
+)
 
 app = typer.Typer(
     name="polarsteps-tts",
@@ -120,6 +125,13 @@ def synthesize_step_cmd(
     output_format: str = typer.Option(
         "mp3", "--format", help="Output audio format: 'mp3' (with ID3 tags) or 'wav'."
     ),
+    speed: float = typer.Option(
+        DEFAULT_SPEED,
+        "--speed",
+        min=MIN_SPEED,
+        max=MAX_SPEED,
+        help=f"Playback speed (Voxtral). Range {MIN_SPEED}-{MAX_SPEED}, 1.0 = normal.",
+    ),
     voxtral_url: str = typer.Option(
         DEFAULT_BASE_URL, "--voxtral-url", help="Base URL of the local Voxtral server."
     ),
@@ -168,6 +180,7 @@ def synthesize_step_cmd(
                     engine=engine,
                     include_intro=not no_intro,
                     output_format=output_format,  # type: ignore[arg-type]
+                    speed=speed,
                 )
             )
     except DomainError as e:
@@ -189,6 +202,13 @@ def synthesize_trip_cmd(
     out: Path = typer.Option(_DEFAULT_OUT_DIR, "--out", help="Output directory."),
     output_format: str = typer.Option(
         "mp3", "--format", help="Output audio format: 'mp3' (with ID3 tags) or 'wav'."
+    ),
+    speed: float = typer.Option(
+        DEFAULT_SPEED,
+        "--speed",
+        min=MIN_SPEED,
+        max=MAX_SPEED,
+        help=f"Playback speed (Voxtral). Range {MIN_SPEED}-{MAX_SPEED}, 1.0 = normal.",
     ),
     voxtral_url: str = typer.Option(
         DEFAULT_BASE_URL, "--voxtral-url", help="Base URL of the local Voxtral server."
@@ -261,6 +281,7 @@ def synthesize_trip_cmd(
                 engine=engine,
                 include_intro=not no_intro,
                 output_format=output_format,  # type: ignore[arg-type]
+                speed=speed,
                 on_step_done=on_step_done,
             )
             # Probe the engine once before adding the progress task so a Voxtral

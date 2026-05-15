@@ -34,11 +34,19 @@ from polarsteps_tts.domain.entities import (
 from polarsteps_tts.domain.exceptions import DomainError
 from polarsteps_tts.domain.ports import TextToSpeechEngine, TripRepository
 from polarsteps_tts.domain.services import IntroGenerator, TextChunker, TextCleaner
-from polarsteps_tts.domain.value_objects import Slug
+from polarsteps_tts.domain.value_objects import (
+    DEFAULT_SYNTHESIS_OPTIONS,
+    Slug,
+    SynthesisOptions,
+)
 from polarsteps_tts.infrastructure.polarsteps import parse_trip_url
 from polarsteps_tts.infrastructure.storage import atomic_write_bytes
 
 TrackFormat = Literal["wav", "mp3"]
+# OpenAI TTS API range — Voxtral inherits the same surface.
+MIN_SPEED = 0.25
+MAX_SPEED = 4.0
+DEFAULT_SPEED = 1.0
 
 # n_decoding_steps=64 confirmed in 4.A smoke test; bumping this value at runtime
 # (params.json edit) implies bumping this constant to invalidate the cache.
@@ -64,6 +72,7 @@ class SynthesizeStepArgs:
     engine: TextToSpeechEngine
     include_intro: bool = True
     output_format: TrackFormat = "mp3"
+    speed: float = DEFAULT_SPEED
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +114,7 @@ def synthesize_step(args: SynthesizeStepArgs) -> SynthesizeStepResult:
         out_dir=args.out_dir,
         include_intro=args.include_intro,
         output_format=args.output_format,
+        speed=args.speed,
     )
 
 
@@ -118,6 +128,7 @@ def synthesize_resolved_step(
     out_dir: Path,
     include_intro: bool = True,
     output_format: TrackFormat = "mp3",
+    speed: float = DEFAULT_SPEED,
 ) -> SynthesizeStepResult:
     """Synthesize a step that has already been resolved from its trip.
 
@@ -131,8 +142,9 @@ def synthesize_resolved_step(
         text_chunker=TextChunker(),
     )
     script = prepare_uc.execute(PrepareNarrationCommand(step=step, include_intro=include_intro))
+    options = DEFAULT_SYNTHESIS_OPTIONS if speed == DEFAULT_SPEED else SynthesisOptions(speed=speed)
     synthesized = SynthesizeStepUseCase(engine).execute(
-        SynthesizeStepCommand(script=script, voice=voice)
+        SynthesizeStepCommand(script=script, voice=voice, options=options)
     )
 
     out_path = _output_path(out_dir, trip, step, index, output_format)

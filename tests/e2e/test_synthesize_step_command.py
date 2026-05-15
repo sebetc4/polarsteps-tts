@@ -129,6 +129,35 @@ class TestSynthesizeStepCommand:
         assert "Invalid format" in result.output
 
     @respx.mock
+    def test_speed_flag_is_passed_to_voxtral(self, runner: CliRunner, out_dir: Path) -> None:
+        import json as _json
+
+        _, _, speech_route = _mock_happy_path()
+
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--speed", "1.25"],
+        )
+
+        assert result.exit_code == 0, result.output
+        payload = _json.loads(speech_route.calls[0].request.read())
+        assert payload["speed"] == 1.25
+
+    def test_speed_below_min_exits_2(self, runner: CliRunner, out_dir: Path) -> None:
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--speed", "0.1"],
+        )
+        assert result.exit_code == 2
+
+    def test_speed_above_max_exits_2(self, runner: CliRunner, out_dir: Path) -> None:
+        result = runner.invoke(
+            app,
+            ["synthesize-step", _URL, "0", "--out", str(out_dir), "--speed", "5.0"],
+        )
+        assert result.exit_code == 2
+
+    @respx.mock
     def test_calls_tts_for_intro_and_each_paragraph(self, runner: CliRunner, out_dir: Path) -> None:
         _, _, speech_route = _mock_happy_path()
 

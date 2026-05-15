@@ -10,6 +10,7 @@ from polarsteps_tts.domain.exceptions import DomainError
 from polarsteps_tts.domain.ports import TextToSpeechEngine, TripRepository
 from polarsteps_tts.infrastructure.polarsteps import parse_trip_url
 from polarsteps_tts.presentation.handlers.synthesize_step_handler import (
+    DEFAULT_SPEED,
     SynthesizeStepResult,
     TrackFormat,
     synthesize_resolved_step,
@@ -25,6 +26,7 @@ class SynthesizeTripArgs:
     engine: TextToSpeechEngine
     include_intro: bool = True
     output_format: TrackFormat = "mp3"
+    speed: float = DEFAULT_SPEED
     # Optional callback invoked once per step (after success or failure) so the
     # CLI can drive a progress bar without coupling the handler to `rich`.
     on_step_done: Callable[[Step, SynthesizeStepResult | None, Exception | None], None] | None = (
@@ -79,6 +81,7 @@ def synthesize_trip(args: SynthesizeTripArgs) -> SynthesizeTripResult:
                 out_dir=args.out_dir,
                 include_intro=args.include_intro,
                 output_format=args.output_format,
+                speed=args.speed,
             )
         except (DomainError, OSError) as e:
             failures.append(SynthesizeTripFailure(step=step, error=e))
